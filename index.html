@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Déclaration d'Anomalie</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      padding: 20px;
+    }
+    .form-container {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #ccc;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    input[readonly] {
+      background: #eee;
+    }
+    button {
+      margin-top: 15px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="form-container">
+    <h2 style="text-align: center;">Déclaration d'une anomalie</h2>
+
+    <form id="anomalieForm">
+      <label for="farmName">Nom de la ferme</label>
+      <input type="text" id="farmName" name="farmName" value="FINCA 20" readonly>
+
+      <label for="reportType">Catégorie du déclarant</label>
+      <select id="reportType" name="reportType" required>
+        <option value="">-- Sélectionner --</option>
+        <option value="Ouvrier">Ouvrier</option>
+        <option value="équipe">Équipe</option>
+        <option value="Autre">Autre</option>
+      </select>
+
+      <div id="workerDiv" class="hidden">
+        <label for="workerId">Sélectionner l'ouvrier</label>
+        <input list="workerList" id="workerId" name="workerId" placeholder="Rechercher un ouvrier...">
+        <datalist id="workerList"></datalist>
+      </div>
+
+      <div id="teamDiv" class="hidden">
+        <label for="teamId">Sélectionner l'équipe</label>
+        <input list="teamList" id="teamId" name="teamId" placeholder="Rechercher une équipe...">
+        <datalist id="teamList"></datalist>
+      </div>
+
+      <div id="otherDiv" class="hidden">
+        <label for="otherReporter">Nom du déclarant</label>
+        <input type="text" id="otherReporter" name="otherReporter">
+      </div>
+
+      <label for="date">Date de l'anomalie</label>
+      <input type="date" id="date" name="date" required>
+
+      <label for="categorie">Catégorie d'anomalie</label>
+      <select id="categorie" name="categorie" required>
+        <option value="">-- Choisir une catégorie --</option>
+        <option value="presence">Contrôle de présence</option>
+        <option value="comportement">Comportement</option>
+        <option value="site">Site (ferme / station)</option>
+        <option value="gestion">Gestion / Organisation</option>
+        <option value="autres">Autres</option>
+      </select>
+
+      <div id="typeDiv" class="hidden">
+        <label for="type">Type d'anomalie</label>
+        <select id="type" name="type" required>
+          <!-- options generated dynamically -->
+        </select>
+      </div>
+
+      <label for="description">Description de l'anomalie</label>
+      <textarea id="description" name="description" rows="4" required></textarea>
+
+      <button type="submit">Envoyer</button>
+    </form>
+  </div>
+
+  <script>
+    // Déclarations
+    const reportType = document.getElementById('reportType');
+    const workerDiv   = document.getElementById('workerDiv');
+    const teamDiv     = document.getElementById('teamDiv');
+    const otherDiv    = document.getElementById('otherDiv');
+    const workerInput = document.getElementById('workerId');
+    const teamInput   = document.getElementById('teamId');
+    const otherInput  = document.getElementById('otherReporter');
+
+    // Liste des anomalies par catégorie
+    const anomaliesParCategorie = {
+      presence: [
+         "Absence non justifiée",
+    "Retard à l’entrée",
+    "Départ anticipé",
+    "Retour tardif après la pause",
+    "Refus de pointer",
+    "Pointage frauduleux (ex : par un collègue)",
+    "Oubli de pointage",
+    "Problème technique de pointeuse",
+    "Présence mais pas à son poste",
+    "Pointage partiel (absence d'une entrée ou sortie)",
+    "Utilisation non autorisée du badge d'accès",
+    "Présence hors horaires déclarés",
+    "Non-respect des règles d'horaires flexibles"
+      ],
+      comportement: [
+        "Comportement irrespectueux (insultes, conflits…)",
+    "Refus d'obéir aux consignes",
+    "Usage du téléphone sans autorisation",
+    "Agressivité envers un collègue",
+    "Absence prolongée de poste sans justification",
+    "Travail lent ou volontairement mal fait",
+    "Signes de consommation de substances interdites",
+    "Abandon de poste sans permission",
+    "Détournement d’outils / vols suspects",
+    "Harcèlement moral ou physique",
+    "Non-respect des règles de sécurité",
+    "Manque de coopération avec l'équipe",
+    "Non-respect des pauses réglementaires",
+    "Utilisation abusive des ressources de l’entreprise"
+      ],
+      site: [
+          "Travailleur sans équipement de protection (EPI)",
+    "Mauvais rangement ou désordre sur le poste",
+    "Danger non signalé sur le lieu de travail",
+    "Présence non autorisée dans une zone interdite",
+    "Locaux sales ou non conformes à l’hygiène",
+    "Entrée par une autre porte que celle prévue",
+    "Machine utilisée sans autorisation ou formation",
+    "Travailleur nouveau sans fiche d’intégration",
+    "Non-respect des consignes environnementales",
+    "Fuite ou pollution non signalée",
+    "Stockage incorrect des matériaux dangereux",
+    "Non-maintenance ou négligence des équipements",
+    "Absence de signalisation appropriée"
+      ],
+      gestion: [
+          "Nouvelle recrue non déclarée au RH",
+    "Transfert non signalé à temps au RH",
+    "Manque d’effectif non prévu",
+    "Incohérence entre présence et planning",
+    "Oubli de consignes RH ou planning",
+    "Départ d’un travailleur non signalé officiellement",
+    "Intérimaire arrivé sans contrat",
+    "Mauvaise communication entre les équipes",
+    "Tâches attribuées non adaptées au profil",
+    "Retards dans la gestion administrative",
+    "Non-respect des procédures internes",
+    "Absence de formation obligatoire",
+    "Non-suivi des indicateurs de performance",
+    "Problèmes dans la planification des ressources humaines"
+      ],
+      autres: [
+          "Autre anomalie (à préciser dans l’observation)",
+    "Incident imprévu non classé",
+    "Problème technique hors du cadre défini",
+    "Suggestions d’amélioration non prises en compte",
+    "Non-respect des règles générales de l’entreprise",
+    "Tout cas particulier nécessitant analyse spécifique"
+      ]
+    };
+
+    // Gérer l'affichage des champs déclarant
+    reportType.addEventListener('change', () => {
+      workerDiv.classList.add('hidden');
+      teamDiv.classList.add('hidden');
+      otherDiv.classList.add('hidden');
+      workerInput.required = teamInput.required = otherInput.required = false;
+
+      if (reportType.value === 'Ouvrier') {
+        workerDiv.classList.remove('hidden');
+        workerInput.required = true;
+      } else if (reportType.value === 'équipe') {
+        teamDiv.classList.remove('hidden');
+        teamInput.required = true;
+      } else if (reportType.value === 'Autre') {
+        otherDiv.classList.remove('hidden');
+        otherInput.required = true;
+      }
+    });
+
+    // Charger listes ouvriers/équipes
+    fetch("https://script.google.com/macros/s/AKfycbwAiB1V0BBGSUkXQFnw351xoGMlmD_wBSzHviJwoLOAuSi9rAlSMCjfpd5T2ohdgBsyZA/exec")
+      .then(r => r.json())
+      .then(data => {
+        const dl = document.getElementById("workerList");
+        data.forEach(n => dl.appendChild(Object.assign(document.createElement("option"), { value: n })));
+      })
+      .catch(console.error);
+
+    fetch("https://script.google.com/macros/s/AKfycbxoy923OwLPZA7S2wq5qOjcp8xA1IVc-28vxSMXDCqobxt9keI_NRfQLwe9T2Y1w12OoQ/exec")
+      .then(r => r.json())
+      .then(data => {
+        const dl = document.getElementById("teamList");
+        data.forEach(n => dl.appendChild(Object.assign(document.createElement("option"), { value: n })));
+      })
+      .catch(console.error);
+
+    // Dynamique anomalies selon catégorie
+    const catSelect = document.getElementById('categorie');
+    const typeDiv   = document.getElementById('typeDiv');
+    const typeSelect= document.getElementById('type');
+
+    catSelect.addEventListener('change', () => {
+      const cat = catSelect.value;
+      typeSelect.innerHTML = '<option value="">-- Choisir anomalie --</option>';
+      if (cat && anomaliesParCategorie[cat]) {
+        anomaliesParCategorie[cat].forEach(a => {
+          typeSelect.appendChild(Object.assign(document.createElement("option"), { value: a, textContent: a }));
+        });
+        typeDiv.classList.remove('hidden');
+        typeSelect.required = true;
+      } else {
+        typeDiv.classList.add('hidden');
+        typeSelect.required = false;
+      }
+    });
+
+    // Soumission
+    document.getElementById('anomalieForm').addEventListener('submit', e => {
+      e.preventDefault();
+      // ... mêmes validations que précédemment ...
+      const data = {
+        farmName:      document.getElementById('farmName').value,
+        reporterType:  reportType.value,
+        reporterValue: reportType.value === 'Ouvrier' ? workerInput.value
+                       : reportType.value === 'équipe' ? teamInput.value
+                       : otherInput.value,
+        date:          document.getElementById('date').value,
+        category:      catSelect.options[catSelect.selectedIndex].text,
+        type:          typeSelect.value,
+        description:   document.getElementById('description').value
+      };
+      // Envoi au script Google
+      fetch("https://script.google.com/macros/s/AKfycbyCVpiOzvfFWDx-6n5ZbP9XD5V0YxE2lT9LsGWJUrPxG3vydVfi9ceZ5d_5mF18VMtiOw/exec", {
+        method: 'POST', mode: 'no-cors',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      })
+      .then(() => {
+        alert("✅ Enregistré avec succès !");
+        document.getElementById('anomalieForm').reset();
+        [workerDiv, teamDiv, otherDiv, typeDiv].forEach(d=>d.classList.add('hidden'));
+      })
+      .catch(() => alert("❌ Une erreur est survenue."));
+    });
+  </script>
+
+</body>
+</html>
